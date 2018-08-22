@@ -7,11 +7,11 @@ export default ({ match }) => {
 
   return (
     <div>
-      <SetContent name='heading' depth={2}>
+      <SetContent id='heading' priority={2}>
         <h1>{item.label}</h1>
       </SetContent>
 
-      <GetContent name='heading' />
+      <GetContent id='heading' />
       <p>{item.description}</p>
       <hr />
     </div>

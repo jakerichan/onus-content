@@ -6,8 +6,8 @@ import list from './list.json';
 
 export default ({ match }) => (
   <div>
-    <SetContent name="heading" depth={1}>
-      <h1>Items</h1>
+    <SetContent id="heading" priority={1}>
+      <h1 key='items'>Items</h1>
     </SetContent>
     <ul>
       {list.map(({ label, id }) => (

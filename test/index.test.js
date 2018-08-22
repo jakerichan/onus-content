@@ -1,67 +1,59 @@
 import React from 'react';
 import { mount } from 'enzyme';
-import { GetContent, SetContent } from '../index';
-import { subscribe } from '../registry'
+import { GetContent, SetContent, Provider } from '../index';
 
-// Since we use the setTimeout in the GetContent onChange function,
-// we can use fake timers and finish updating with SetContent when ready
-jest.useFakeTimers();
-let mountedApp
+let wrapper
 let noop = () => {};
 
 const Test = ({ children, ...props }) => (
-  <SetContent name='test' {...props}>
+  <SetContent id='test' {...props}>
     <heading>{children}</heading>
   </SetContent>
 )
 
-describe('registry', () => {
-  describe("subscribe", () => {
-    it("returns function", () => {
-      const subscription = subscribe("foo", noop);
-      expect(subscription).toBeInstanceOf(Function);
-      subscription();
-    });
-  })
-})
-
 describe('GetContent / SetContent', () => {
   afterEach(() => {
-    if (mountedApp) mountedApp.unmount();
+    if (wrapper) wrapper.unmount();
   })
 
   it('inserts contents of SetContent into GetContent', () => {
-    mountedApp = mount(
-      <section>
-        <article className='set-content'>
-        <Test depth={0}>Test</Test>
-        </article>
-        <article className='get-content'>
-          <GetContent name='test' />
-        </article>
-      </section>
+    wrapper = mount(
+      <Provider>
+        <section>
+          <article className='get-content'>
+            <GetContent id='test' />
+          </article>
+          <article className='set-content'>
+            <Test priority={0}>
+              <div id='test-el'>Test</div>
+            </Test>
+          </article>
+        </section>
+      </Provider>
     )
-    jest.runAllTimers();
-    expect(mountedApp.find(GetContent).text()).toBe('Test');
+
+    expect(wrapper.contains(<div id='test-el'>Test</div>)).toBe(true)
   });
 
-  it('uses biggest depth value regardless of order', () => {
-    mountedApp = mount(
-      <section>
-        <article className='get-content'>
-          <GetContent name='test' />
-        </article>
-        <Test depth={2}>Two</Test>
-        <Test depth={3}>Three</Test>
-        <Test depth={0}>Zero</Test>
-        <Test depth={1}>One</Test>
-      </section>
+  it('uses biggest priority value regardless of order', () => {
+    wrapper = mount(
+      <Provider>
+        <section>
+          <article className='get-content'>
+            <GetContent id='test' />
+          </article>
+          <Test priority={2}>Two</Test>
+          <Test priority={3}><div id='test-el' key={0}>Three</div></Test>
+          <Test priority={0}>Zero</Test>
+          <Test priority={1}>One</Test>
+        </section>
+      </Provider>
     )
-    jest.runAllTimers();
-    expect(mountedApp.find(GetContent).text()).toBe('Three');
+
+    expect(wrapper.contains(<div id='test-el' key={0}>Three</div>)).toBe(true);
   });
 
-  it('renders next lower depth when the highest unmounts', () => {
+  it('renders next lower priority when the highest unmounts', () => {
     class App extends React.Component {
       constructor(props) {
         super(props)
@@ -70,21 +62,20 @@ describe('GetContent / SetContent', () => {
 
       render() {
         return (
-          <section>
-            <GetContent name='test' />
-            <Test depth={0}>Zero</Test>
-            {this.state.showOne ? <Test depth={1}>One</Test> : null}
-          </section>
+          <Provider>
+            <section>
+              <GetContent id='test' />
+              <Test priority={0}>Zero</Test>
+              {this.state.showOne ? <Test priority={1}>One</Test> : null}
+            </section>
+          </Provider>
         );
       }
     }
-
-    mountedApp = mount(<App />)
-    jest.runAllTimers();
-    expect(mountedApp.find(GetContent).text()).toBe('One');
-    mountedApp.setState({ showOne: false })
-    jest.runAllTimers();
-    expect(mountedApp.find(GetContent).text()).toBe('Zero');
+    wrapper = mount(<App />)
+    expect(wrapper.find(GetContent).text()).toBe('One');
+    wrapper.setState({ showOne: false })
+    expect(wrapper.find(GetContent).text()).toBe('Zero');
   });
 
   it('renders new highest when it mounts', () => {
@@ -96,25 +87,24 @@ describe('GetContent / SetContent', () => {
 
       render() {
         return (
-          <section>
-            <GetContent name='test' />
-            {this.state.showTwo ? <Test depth={2}>Two</Test> : null}
-            <Test depth={0}>Zero</Test>
-            {this.state.showOne ? <Test depth={1}>One</Test> : null}
-          </section>
+          <Provider>
+            <section>
+              <GetContent id='test' />
+              {this.state.showTwo ? <Test priority={2}>Two</Test> : null}
+              <Test priority={0}>Zero</Test>
+              {this.state.showOne ? <Test priority={1}>One</Test> : null}
+            </section>
+          </Provider>
         );
       }
     }
 
-    mountedApp = mount(<App />)
-    jest.runAllTimers();
-    expect(mountedApp.find(GetContent).text()).toBe('Zero');
-    mountedApp.setState({ showOne: true })
-    jest.runAllTimers();
-    expect(mountedApp.find(GetContent).text()).toBe('One');
-    mountedApp.setState({ showTwo: true })
-    jest.runAllTimers();
-    expect(mountedApp.find(GetContent).text()).toBe('Two');
+    wrapper = mount(<App />)
+    expect(wrapper.find(GetContent).text()).toBe('Zero');
+    wrapper.setState({ showOne: true })
+    expect(wrapper.find(GetContent).text()).toBe('One');
+    wrapper.setState({ showTwo: true })
+    expect(wrapper.find(GetContent).text()).toBe('Two');
   });
 
   it('renders multiple GetContent components', () => {
@@ -126,23 +116,24 @@ describe('GetContent / SetContent', () => {
 
       render() {
         return (
-          <section>
-            <div className="first">
-              <GetContent name='test' />
-            </div>
-            <Test depth={0}>Zero</Test>
-            <Test depth={1}>One</Test>
-            <div className="second">
-              <GetContent name='test' />
-            </div>
-          </section>
+          <Provider>
+            <section>
+              <div className="first">
+                <GetContent id='test' />
+              </div>
+              <Test priority={0}>Zero</Test>
+              <Test priority={1}>One</Test>
+              <div className="second">
+                <GetContent id='test' />
+              </div>
+            </section>
+          </Provider>
         );
       }
     }
 
-    mountedApp = mount(<App />)
-    jest.runAllTimers();
-    mountedApp.find(GetContent).forEach((element) => {
+    wrapper = mount(<App />)
+    wrapper.find(GetContent).forEach((element) => {
       expect(element.text()).toBe('One');
     })
   })
@@ -156,23 +147,24 @@ describe('GetContent / SetContent', () => {
 
       render() {
         return (
-          <section>
-            <GetContent name='test' />
-            <GetContent name='foo' />
-            <Test depth={0}>Zero</Test>
-            <Test depth={1}>One</Test>
-            <SetContent name='foo' depth={2}>
-              <span>FooBar</span>
-            </SetContent>
-          </section>
+          <Provider>
+            <section>
+              <GetContent id='test' />
+              <GetContent id='foo' />
+              <Test priority={0}>Zero</Test>
+              <Test priority={1}>One</Test>
+              <SetContent id='foo' priority={2}>
+                <span>FooBar</span>
+              </SetContent>
+            </section>
+          </Provider>
         );
       }
     }
 
-    mountedApp = mount(<App />)
-    jest.runAllTimers();
-    mountedApp.find(GetContent).forEach((element) => {
-      if (element.prop('name') === 'foo') {
+    wrapper = mount(<App />)
+    wrapper.find(GetContent).forEach((element) => {
+      if (element.prop('id') === 'foo') {
         expect(element.text()).toBe('FooBar');  
       } else {
         expect(element.text()).toBe('One');
@@ -182,81 +174,76 @@ describe('GetContent / SetContent', () => {
 
   it('appends rather than replacing content', () => {
     class App extends React.Component {
-      constructor(props) {
-        super(props)
-        this.state = { showOne: false, showTwo: true }
-      }
+      state = { showOne: false, showTwo: true }
 
       render() {
+        console.log('append test')
         return (
-          <section>
-            <GetContent name='test' />
-            {this.state.showTwo ? <Test depth={2} append>Two</Test> : null}
-            <Test depth={0}>Zero</Test>
-            {this.state.showOne ? <Test depth={1}>One</Test> : null}
-          </section>
+          <Provider>
+            <section>
+              <GetContent id='test' />
+              {this.state.showTwo ? <Test priority={2} append>Two</Test> : null}
+              <Test priority={0}>Zero</Test>
+              {this.state.showOne ? <Test priority={1}>One</Test> : null}
+            </section>
+          </Provider>
         );
       }
     }
 
-    mountedApp = mount(<App />)
-    jest.runAllTimers();
-    expect(mountedApp.find(GetContent).text()).toBe('ZeroTwo');
-    mountedApp.setState({ showOne: true })
-    jest.runAllTimers();
-    expect(mountedApp.find(GetContent).text()).toBe('OneTwo');
+    wrapper = mount(<App />)
+    expect(wrapper.find(GetContent).text()).toBe('ZeroTwo');
+    wrapper.setState({ showOne: true })
+    expect(wrapper.find(GetContent).text()).toBe('OneTwo');
   })
 
-  it('prepends rather than replacing content', () => {
+  // it('prepends rather than replacing content', () => {
+  //   class App extends React.Component {
+  //     constructor(props) {
+  //       super(props)
+  //       this.state = { showOne: false, showTwo: true }
+  //     }
+
+  //     render() {
+  //       return (
+  //         <Provider>
+  //           <section>
+  //             <GetContent id='test' />
+  //             {this.state.showTwo ? <Test priority={2} prepend>Two</Test> : null}
+  //             <Test priority={0}>Zero</Test>
+  //             {this.state.showOne ? <Test priority={1}>One</Test> : null}
+  //           </section>
+  //         </Provider>
+  //       );
+  //     }
+  //   }
+
+  //   wrapper = mount(<App />)
+  //   expect(wrapper.find(GetContent).text()).toBe('TwoZero');
+  //   wrapper.setState({ showOne: true })
+  //   expect(wrapper.find(GetContent).text()).toBe('TwoOne');
+  // })
+
+  it('replaces elements in the same priority', () => {
     class App extends React.Component {
-      constructor(props) {
-        super(props)
-        this.state = { showOne: false, showTwo: true }
-      }
+      state = { showOne: true, showZero: false }
 
       render() {
         return (
-          <section>
-            <GetContent name='test' />
-            {this.state.showTwo ? <Test depth={2} prepend>Two</Test> : null}
-            <Test depth={0}>Zero</Test>
-            {this.state.showOne ? <Test depth={1}>One</Test> : null}
-          </section>
+          <Provider>
+            <section>
+              <GetContent id='test' />
+              {this.state.showZero ? <Test priority={0}>Zero</Test> : null}
+              {this.state.showOne ? <Test priority={0}>One</Test> : null}
+            </section>
+          </Provider>
         );
       }
     }
 
-    mountedApp = mount(<App />)
-    jest.runAllTimers();
-    expect(mountedApp.find(GetContent).text()).toBe('TwoZero');
-    mountedApp.setState({ showOne: true })
-    jest.runAllTimers();
-    expect(mountedApp.find(GetContent).text()).toBe('TwoOne');
-  })
-
-  it('replaces elements in the same depth', () => {
-    class App extends React.Component {
-      constructor(props) {
-        super(props)
-        this.state = { showOne: true, showZero: false }
-      }
-
-      render() {
-        return (
-          <section>
-            <GetContent name='test' />
-            {this.state.showZero ? <SetContent name='test' depth={0}>Zero</SetContent> : null}
-            {this.state.showOne ? <SetContent name='test' depth={0}>One</SetContent> : null}
-          </section>
-        );
-      }
-    }
-
-    mountedApp = mount(<App />)
-    jest.runAllTimers();
-    expect(mountedApp.find(GetContent).text()).toBe('One');
-    mountedApp.setState({ showOne: false, showZero: true })
-    jest.runAllTimers();
-    expect(mountedApp.find(GetContent).text()).toBe('Zero');
+    wrapper = mount(<App />)
+    expect(wrapper.find(GetContent).text()).toBe('One');
+    wrapper.setState({ showOne: false, showZero: true });
+    expect(wrapper.find(GetContent).text()).toBe('Zero');
   });
 });

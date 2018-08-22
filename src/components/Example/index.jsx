@@ -7,7 +7,7 @@ import Items from './items';
 export default () => (
   <BrowserRouter>
     <div style={{ maxWidth: 1000, margin: '0 auto' }}>
-      <GetContent name="heading" />
+      <GetContent id="heading" />
       <ul>
         <li>
           <Link to="/">Home</Link>

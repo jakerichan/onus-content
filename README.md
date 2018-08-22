@@ -37,7 +37,7 @@ const list = [
 const Home = () => (
   <section>
     {/* This will show on root path */}
-    <SetContent name='heading' depth={0}>
+    <SetContent id='heading' priority={0}>
       <h1>Home</h1>
     </SetContent>
   </section>
@@ -49,7 +49,7 @@ const Item = ({ match }) => {
   return (
     <article>
       {/* This will show on path /items/:itemLabel */}
-      <SetContent name='heading' depth={2}>
+      <SetContent id='heading' priority={2}>
         <h1>{item.label}</h1>
       </SetContent>
 
@@ -63,7 +63,7 @@ const Item = ({ match }) => {
 const Items = ({ match }) => (
   <section>
     {/* This will show on path /items */}
-    <SetContent name='heading' depth={1}>
+    <SetContent id='heading' priority={1}>
       <h1>Items</h1>
     </SetContent>
     <ul>
@@ -83,8 +83,8 @@ const Items = ({ match }) => (
 const App = () => (
   <BrowserRouter>
     <section>
-    {/* The children of the highest depth SetContent will replace  the GetContent with matching name */}
-      <GetContent name='heading' />
+    {/* The children of the highest priority SetContent will replace  the GetContent with matching name */}
+      <GetContent id='heading' />
       <ul>
         <li>
           <Link to='/'>Home</Link>
@@ -142,7 +142,7 @@ const App = () => (
       <td>Unique name that will be matched with GetContent</td>
     </tr>
     <tr>
-      <td>depth</td>
+      <td>priority</td>
       <td>Number</td>
       <td>[required]</td>
       <td>Priority to render children, highest wins</td>

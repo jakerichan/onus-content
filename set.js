@@ -4,33 +4,26 @@
 
 var React = require('react');
 var PropTypes = require('prop-types');
-var createReactClass = require('create-react-class')
+var createReactClass = require('create-react-class');
 var register = require('./registry').register;
-
+var unregister = require('./registry').unregister;
+var Tunnel = require('react-tunnels').Tunnel
 var Set = createReactClass({
   propTypes: {
     prepend: PropTypes.bool,
     append: PropTypes.bool,
-    name: PropTypes.string.isRequired,
-    depth: PropTypes.number.isRequired
+    id: PropTypes.string.isRequired,
+    priority: PropTypes.number.isRequired
   },
   componentWillUnmount: function() {
-    register(this.props.name, null, this.props.depth);
+    unregister(this.props.id, this.props.priority);
   },
-  render: function () {
-    var props = this.props;
+  render: function() {
+    var _props = this.props
+    var location = _props.prepend ? 1 : _props.append ? 2 : 0
+    register(_props.id, _props.children, _props.priority, location)
 
-    var location = props.prepend ?
-      1 :
-      props.append ?
-        2 :
-        0;
-
-    setTimeout(function () {
-      // this lets the previous setContent at the same depth unregister before rendering the next
-      register(props.name, props.children, props.depth, location);
-    });
-    return null;
+    return React.createElement(Tunnel, _props);
   }
 });
 
